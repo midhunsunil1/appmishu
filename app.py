@@ -92,57 +92,52 @@ with tab_reg:
         st.warning("No numeric columns found.")
     else:
         target = st.selectbox("Select numeric target:", numeric_cols, key="reg_target")
-        if st.button("Train regression models", key="train_reg_models"):
-            X_orig = df.drop(columns=[target])
-            X_enc = pd.get_dummies(X_orig, drop_first=True)
-            y = df[target]
-            X_tr, X_te, y_tr, y_te = train_test_split(X_enc, y, test_size=0.3, random_state=1)
-            reg_models = {
-                "Linear": LinearRegression(),
-                "Ridge": Ridge(),
-                "Lasso": Lasso(),
-                "DecisionTree": DecisionTreeRegressor(random_state=1)
-            }
-            reg_perf = []
-            for name, model in reg_models.items():
-                model.fit(X_tr, y_tr)
-                y_pred = model.predict(X_te)
-                reg_perf.append({
-                    "Model": name,
-                    "R2": r2_score(y_te, y_pred),
-                    "MSE": mean_squared_error(y_te, y_pred),
-                    "MAE": mean_absolute_error(y_te, y_pred)
-                })
-            st.session_state["reg_models"] = reg_models
-            st.session_state["reg_Xcols"] = X_enc.columns.tolist()
-            st.session_state["reg_perf"] = reg_perf
-            st.success("Models trained. Enter your values below.")
+        # Always train models on latest data (user can re-upload or refresh data)
+        X_orig = df.drop(columns=[target])
+        X_enc = pd.get_dummies(X_orig, drop_first=True)
+        y = df[target]
+        X_tr, X_te, y_tr, y_te = train_test_split(X_enc, y, test_size=0.3, random_state=1)
+        reg_models = {
+            "Linear": LinearRegression(),
+            "Ridge": Ridge(),
+            "Lasso": Lasso(),
+            "DecisionTree": DecisionTreeRegressor(random_state=1)
+        }
+        reg_perf = []
+        for name, model in reg_models.items():
+            model.fit(X_tr, y_tr)
+            y_pred = model.predict(X_te)
+            reg_perf.append({
+                "Model": name,
+                "R2": r2_score(y_te, y_pred),
+                "MSE": mean_squared_error(y_te, y_pred),
+                "MAE": mean_absolute_error(y_te, y_pred)
+            })
 
-        if "reg_models" in st.session_state:
-            st.subheader("Manual Input for Prediction")
-            input_dict = {}
-            for col in df.drop(columns=[target]).columns:
-                if df[col].dtype in [int, float]:
-                    val = float(df[col].mean())
-                    input_dict[col] = st.number_input(col, value=val)
-                else:
-                    options = [str(o) for o in df[col].unique() if pd.notnull(o)]
-                    input_dict[col] = st.selectbox(col, options, key=f"manual_{col}")
-            if st.button("Predict for All Models", key="predict_all_models"):
-                inp_df = pd.DataFrame([input_dict])
-                inp_enc = pd.get_dummies(inp_df, drop_first=True)
-                inp_enc = inp_enc.reindex(columns=st.session_state["reg_Xcols"], fill_value=0)
-                preds = {}
-                for name, model in st.session_state["reg_models"].items():
-                    try:
-                        pred = float(model.predict(inp_enc)[0])
-                        preds[name] = round(pred, 2)
-                    except Exception as e:
-                        preds[name] = "Err"
-                perf_df = pd.DataFrame(st.session_state["reg_perf"]).set_index("Model")
-                perf_df["Manual Prediction"] = pd.Series(preds)
-                st.dataframe(perf_df)
-                valid_preds = {k: v for k, v in preds.items() if isinstance(v, float) or isinstance(v, int)}
-                if valid_preds:
-                    chart = pd.DataFrame(valid_preds, index=["Prediction"]).T
-                    st.bar_chart(chart)
+        st.subheader("Manual Input for Prediction")
+        input_dict = {}
+        for col in df.drop(columns=[target]).columns:
+            if df[col].dtype in [int, float]:
+                val = float(df[col].mean())
+                input_dict[col] = st.number_input(col, value=val, key=f"manual_{col}")
+            else:
+                options = [str(o) for o in df[col].unique() if pd.notnull(o)]
+                input_dict[col] = st.selectbox(col, options, key=f"manual_{col}")
+        if st.button("Predict for All Models", key="predict_all_models"):
+            inp_df = pd.DataFrame([input_dict])
+            inp_enc = pd.get_dummies(inp_df, drop_first=True)
+            inp_enc = inp_enc.reindex(columns=X_enc.columns, fill_value=0)
+            preds = {}
+            for name, model in reg_models.items():
+                try:
+                    pred = float(model.predict(inp_enc)[0])
+                    preds[name] = round(pred, 2)
+                except Exception as e:
+                    preds[name] = "Err"
+            perf_df = pd.DataFrame(reg_perf).set_index("Model")
+            perf_df["Manual Prediction"] = pd.Series(preds)
+            st.dataframe(perf_df)
+            valid_preds = {k: v for k, v in preds.items() if isinstance(v, float) or isinstance(v, int)}
+            if valid_preds:
+                chart = pd.DataFrame(valid_preds, index=["Prediction"]).T
+                st.bar_chart(chart)
