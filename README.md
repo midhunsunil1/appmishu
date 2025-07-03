@@ -1,1 +1,1 @@
-v4 manual prediction feature.
+Dashboard using your real productivity app dataset. Regression, manual input, and visualizations are now real and working.
