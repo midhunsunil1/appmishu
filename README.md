@@ -1,1 +1,1 @@
-Dashboard using your real productivity app dataset. Regression, manual input, and visualizations are now real and working.
+Only 5 key input columns are used for manual regression input. All others are set at mean/mode.
