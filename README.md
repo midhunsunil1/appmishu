@@ -1,1 +1,13 @@
-Only 5 key input columns are used for manual regression input. All others are set at mean/mode.
+
+# FocusNest Dashboard
+
+Build Better Habits. Break the Social Cycle.
+
+## Quick Start
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+Deploy on Streamlit Cloud by pushing this repo to GitHub and connecting.
+
